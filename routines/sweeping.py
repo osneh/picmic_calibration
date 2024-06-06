@@ -41,7 +41,7 @@ def main():
     df_cali = pd.read_csv(filecali)
     df_digi_par = pd.read_csv(filedigi_par)
     df_alias= pd.read_csv(filealias)
-
+    
     BARS()
     
     scanList =  list(df_scan.select_dtypes(include=['float64']).columns)
@@ -51,8 +51,8 @@ def main():
     print(scanList)
     
     for i, pixel in enumerate(scanList):
-        print('-->>', i, '--',pixel)
-        print(df_cali[['VRefN','PPReg']][df_cali.Scan==pixel])
+        ##print('-->>', i, '--',pixel)
+        ##print(df_cali[['VRefN','PPReg']][df_cali.Scan==pixel])
         index_cali = df_cali[['VRefN','PPReg']][df_cali.Scan==pixel].index
         
         if (len(index_cali)==0):
@@ -88,8 +88,8 @@ def main():
                 vrefn_of_min = xval 
         
         ##print('........')
-        print('proposed PPReg =',ppreg_of_min)
-        print('VRefN  of proposed PPReg =',vrefn_of_min)
+        ##print('proposed PPReg =',ppreg_of_min)
+        ##print('VRefN  of proposed PPReg =',vrefn_of_min)
         df_cali.loc[idx_cali,'PPReg'] = ppreg_of_min
         df_cali.loc[idx_cali,'rawIadj'] = ppreg_of_min
         df_cali.loc[idx_cali,'VRefN'] = vrefn_of_min
@@ -97,7 +97,6 @@ def main():
         ##print('~~~~~~~~~~~~~~~~')
         ##print(df_cali[df_cali.Scan==pixel])
         ##print('--------------------------------------------')
-    
     
     df_cali.to_csv('../files/'+outputfile,index=False)
     newdf = df_cali[['Row','Col','PPReg']]
