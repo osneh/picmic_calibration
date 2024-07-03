@@ -9,7 +9,7 @@ import sys
 
 # Fonction pour etablir une connexion TCP avec un serveur.
 # ----------------------------------------------------------
-def connect_to_server(server, port, vrefn):
+def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCP_IP7"):
     try:
         # Tentative de connexion au serveur specifie par l adresse et le port.
         print(f"Tentative de connexion au serveur {server}:{port}")
@@ -47,12 +47,13 @@ def connect_to_server(server, port, vrefn):
                 data = client.recv(1024)
                 check_acknowledgement(desc, ack, data)
                 
-            ##print('HELLO 00')
+            print('HELLO 00')
             line3 = 'LOAD_PICMIC_I2C_REG -add 38 -val '
             line4 = 'START_RUN -TIME 1 -SAVETO '
 			      ##line5 = 'STOP_RUN '
             ##directory = "C:\\Users\\Karim\\TCP_IP\\04_25_2024"
-            directory = "K:\\RUNDATA\\TCP_IP6"
+            ##directory = "K:\\RUNDATA\\TCP_IP6"
+            directory = dirname
             ##directory = "/group/picmic/RUNDATA"
             # Creation du repertoire racine une fois.
             os.makedirs(directory, exist_ok=True)
@@ -145,22 +146,25 @@ def main():
     parser.add_argument("-host", "--host_ip" ,help="provide the server IP")
     parser.add_argument("-port", "--port_number" ,help="provide the port number")
     parser.add_argument("-vrefn", "--vrefn_val" ,help="provide the current vrefn value")
+    parser.add_argument("-dirname", "--dir_name" ,help="provide the output directory value")
     ##parser.add_argument("-sweeping","--RL",help="Sweeping Right(1) or Left(0)", action=argparse.BooleanOptionalAction, default=True)
     args = parser.parse_args()
 
     host = str(args.host_ip).strip()
     port = int(args.port_number)
+    ival = int(args.vrefn_val)
+    this_dirname = str(args.dir_name).strip()
 
     if ( (str(args.host_ip)=='None') & (str(args.port_number)=='None') ) :
         print("----------------------- >>>>>>>>>>>>>>>> Host && PortNumber-- Mandatory   <<<<<<<<<<<<<<<<<<<-------------------------")
         print('Script not executed')
         exit()
 
-    ival = int(args.vrefn_val)
+    
 
-    print('host=',host,',port=',port, ',vrefn=',ival)
+    print('host=',host,',port=',port, ',vrefn=',ival, ',dir_name=',this_dirname)
 
-    connect_to_server(host, port, ival)
+    connect_to_server(host, port, ival,this_dirname)
 
     print('----- DONE ----------')
     exit()
