@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
@@ -6,10 +7,43 @@ import os
 import time,collections,os, platform , pathlib
 import argparse
 import sys
+VREFN_TH = 45
+
+def read_ppreg(row,col):
+
+    msg="#1 LOAD_PICMIC_I2C_REG -add 61 -val {}\n".format(row)
+    s.send(msg)
+    data = s.recv(1024)
+    msg="#1 LOAD_PICMIC_I2C_REG -add 62 -val {}\n".format(col)
+    s.send(msg)
+    data = s.recv(1024)
+    msg="#1 READ_PICMIC_I2C_REG -add 63 ?\n"
+    s.send(msg)
+    data = s.recv(1024)
+    response = data.decode('utf-8').strip()   
+    ppreg = response.split('=')[-1].strip()     
+    print('----->> Used PPREG value '+str(ppreg)+ ' ~~ for ['+str(row)+','+str(col)+'] <<------' )
+    return ppreg
+
+def set_ppreg(row,col,new_ppreg):
+    
+    msg="#1 LOAD_PICMIC_I2C_REG -add 61 -val {}\n".format(row)
+    s.send(msg)
+    data = s.recv(1024)
+    msg="#1 LOAD_PICMIC_I2C_REG -add 62 -val {}\n".format(col)
+    s.send(msg)
+    data = s.recv(1024)
+    msg="#1 LOAD_PICMIC_I2C_REG -add 63 -val {}\n".format(new_ppreg)
+    s.send(msg)
+    data = s.recv(1024)
+    response = data.decode('utf-8').strip()   
+    ppreg = response.split('=')[-1].strip()     
+    print('----->> Set new PPREG value '+str(ppreg)+ ' ~~ for ['+str(row)+','+str(col)+'] <<------' )
+
 
 # Fonction pour etablir une connexion TCP avec un serveur.
 # ----------------------------------------------------------
-def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCP_IP7"):
+def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
     try:
         # Tentative de connexion au serveur specifie par l adresse et le port.
         print(f"Tentative de connexion au serveur {server}:{port}")
@@ -35,8 +69,10 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCP_IP7"):
             formated_string = f"#3 LOAD_PICMIC_I2C_REG -add 39 -val {vrefn} \n"
             byte_string=formated_string.encode('utf-8')
             commands = [
+                ##(b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_08Jul24_V3521.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
                 (b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_26Jun24_V3520.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
                 (b"#2 LOAD_PICMIC_CONFIG_FILE -FROM .\\PICMIC_ConfigFiles\\picmic_cfg_all_columns_row3.txt \n", "Chargement du fichier de configuration PICMIC", "#2 LOAD_PICMIC_CONFIG_FILE #EXECUTED OK"),
+                ##(b"#2 LOAD_PICMIC_CONFIG_FILE -FROM .\\PICMIC_ConfigFiles\\TEST2NN.txt \n", "Chargement du fichier de configuration PICMIC", "#2 LOAD_PICMIC_CONFIG_FILE #EXECUTED OK"),
                 (byte_string, "LOAD_PICMIC_I2C_REG", "#3 LOAD_PICMIC_I2C_REG #EXECUTED OK"),
             ]
 
@@ -46,78 +82,97 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCP_IP7"):
                 client.sendall(cmd)
                 data = client.recv(1024)
                 check_acknowledgement(desc, ack, data)
-                
-            print('HELLO 00')
+            
             line3 = 'LOAD_PICMIC_I2C_REG -add 38 -val '
             line4 = 'START_RUN -TIME 1 -SAVETO '
-			      ##line5 = 'STOP_RUN '
-            ##directory = "C:\\Users\\Karim\\TCP_IP\\04_25_2024"
-            ##directory = "K:\\RUNDATA\\TCP_IP6"
+            
             directory = dirname
-            ##directory = "/group/picmic/RUNDATA"
-            # Creation du repertoire racine une fois.
+            
             os.makedirs(directory, exist_ok=True)
-            ##print('HELLO 01')
-            ##client.sendall(b"#{command_number} LOAD_PICMIC_I2C_REG --add 61 --val \n")
-            ##client.sendall(b"#{command_number} LOAD_PICMIC_I2C_REG --add 61 --val \n".encode('utf-8'))
 
             # Boucle pour la creation des dossiers specifiques a chaque operation et envoi des commandes correspondantes pour une boucle en VrefN. 
-            for vrefp in range(40, 61):
-                folder_name = f"run_vrefn{vrefn}_vrefp{vrefp}"
-#                folder_path = os.path.join(directory, folder_name)
-                folder_path = directory +"\\" + folder_name
-                print(f"Repertoire a creer : {folder_path}")
-                if (platform.system()=="Linux") :
-                    linuxDir='/group/picmic'+pathlib.PureWindowsPath(folder_path).as_posix().strip('K:')
-                    os.makedirs(linuxDir, exist_ok=True)
-                    # print(f"chmod -R g+w {linuxDir}")
-                    os.system("chmod -R g+w "+linuxDir)
-                    print(f"Repertoire LINUX cree avec succes : {linuxDir}")
-                else:
-                    os.makedirs(folder_path, exist_ok=True)
-                print(f"Repertoire cree avec succes : {folder_path}")
-                time.sleep(0.1)
+            xlimit = [5,VREFN_TH-4]
+            loop_dir = 1
 
-                current_command = f"#{command_number} {line3}{vrefp}\n"
-                client.sendall(current_command.encode('utf-8'))
-                try:
-                    timeout=client.gettimeout()
-                    client.settimeout(10.0)
+            if ( vrefn-VREFN_TH > 0 ) :
+                xlimit = [65,VREFN_TH+3]
+                loop_dir = -1
+            
+            sweeping_flag = True
+
+            while sweeping_flag :
+
+                # for vrefp in range(xlimit[0],xlimit[1],loop_dir):
+                ##for vrefp in range(40,61):
+                for vrefp in range(50,52):
+                    folder_name = f"run_vrefn{vrefn}_vrefp{vrefp}"
+                    # folder_path = os.path.join(directory, folder_name)
+                    folder_path = directory +"\\" + folder_name
+                    print(f"Repertoire a creer : {folder_path}")
+                    if (platform.system()=="Linux") :
+                        linuxDir='/group/picmic'+pathlib.PureWindowsPath(folder_path).as_posix().strip('K:')
+                        os.makedirs(linuxDir, exist_ok=True)
+                        # print(f"chmod -R g+w {linuxDir}")
+                        os.system("chmod -R g+w "+linuxDir)
+                        print(f"Repertoire LINUX cree avec succes : {linuxDir}")
+                    else:
+                        os.makedirs(folder_path, exist_ok=True)
+                    print(f"Repertoire cree avec succes : {folder_path}")
+                    time.sleep(0.1)
+
+                    current_command = f"#{command_number} {line3}{vrefp}\n"
+                    client.sendall(current_command.encode('utf-8'))
+                    try:
+                        timeout=client.gettimeout()
+                        client.settimeout(10.0)
+                        data = client.recv(1024)
+                        client.settimeout(timeout)
+                        check_acknowledgement(f"{line3}{vrefp}", f"#{command_number} LOAD_PICMIC_I2C_REG #EXECUTED OK", data)
+                    except socket.timeout:
+                        print('TIMEOUT')
+                        
+                    command_number += 1
+
+                    current_command = f"#{command_number} {line4}{folder_path}\n"
+                    client.sendall(current_command.encode('utf-8'))
                     data = client.recv(1024)
-                    client.settimeout(timeout)
-                    check_acknowledgement(f"{line3}{vrefp}", f"#{command_number} LOAD_PICMIC_I2C_REG #EXECUTED OK", data)
-                except socket.timeout:
-                    print('TIMEOUT')
-                     
-                command_number += 1
+                    check_acknowledgement(f"{line4}{folder_path}", f"#{command_number} START_RUN #EXECUTED OK", data)
+                    #time.sleep(1)
+                    #client.sendall(current_command.encode('utf-8'))
+                    data = client.recv(1024)
+                    check_acknowledgement(f"START_RUN", f"#{command_number} RUN_FINISHED", data)
+                    #time.sleep(1.0)
+                    #command_number += 1
 
-                current_command = f"#{command_number} {line4}{folder_path}\n"
-                client.sendall(current_command.encode('utf-8'))
-                data = client.recv(1024)
-                check_acknowledgement(f"{line4}{folder_path}", f"#{command_number} START_RUN #EXECUTED OK", data)
-                #time.sleep(1)
-                #client.sendall(current_command.encode('utf-8'))
-                data = client.recv(1024)
-                check_acknowledgement(f"START_RUN", f"#{command_number} RUN_FINISHED", data)
-                #time.sleep(1.0)
-                #command_number += 1
-
-                #current_command = f"#{command_number} STOP_RUN\n"
-                #client.sendall(current_command.encode('utf-8'))
-                #data = client.recv(1024)
-                #check_acknowledgement(f"STOP_RUN", f"#{command_number} RUN_FINISHED", data)
-                skip_next_response = False
-                command_number += 1
-
-                if skip_next_response:
-                    #print(f"DEBUG: Reponse ignoree pour la commande #{command_number}")
-                    client.recv(1024)
+                    #current_command = f"#{command_number} STOP_RUN\n"
+                    #client.sendall(current_command.encode('utf-8'))
+                    #data = client.recv(1024)
+                    #check_acknowledgement(f"STOP_RUN", f"#{command_number} RUN_FINISHED", data)
                     skip_next_response = False
+                    command_number += 1
 
-            # Envoi de la commande pour arrêter les scripts sur le serveur.
-            client.sendall(b"#{command_number} STOP_SCRIPT\n")
-            #print(f"Commande envoyee #{command_number}: STOP_SCRIPT")
+                    if skip_next_response:
+                        #print(f"DEBUG: Reponse ignoree pour la commande #{command_number}")
+                        client.recv(1024)
+                        skip_next_response = False
 
+                # Envoi de la commande pour arrêter les scripts sur le serveur.
+                client.sendall(b"#{command_number} STOP_SCRIPT\n")
+                #print(f"Commande envoyee #{command_number}: STOP_SCRIPT")
+
+                # ########################################################## #
+                #                data processing and analysis                #
+                # ########################################################## #
+
+                ## process data from binary to ascii
+                os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_STANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
+
+                ## merge decoded data
+                os.system("python /home/ilc/habreu/data_bin2ascii/merger.py -f /group/picmic/RUNDATA/TCPdata/*txt")
+
+                ## Sweeping --> count the pixels and change their PPReg value
+
+                sweeping_flag = False
             # --- Henso Here
             exit()
 
@@ -159,8 +214,6 @@ def main():
         print("----------------------- >>>>>>>>>>>>>>>> Host && PortNumber-- Mandatory   <<<<<<<<<<<<<<<<<<<-------------------------")
         print('Script not executed')
         exit()
-
-    
 
     print('host=',host,',port=',port, ',vrefn=',ival, ',dir_name=',this_dirname)
 
