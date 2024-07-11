@@ -7,37 +7,54 @@ import os
 import time,collections,os, platform , pathlib
 import argparse
 import sys
+import pandas as pd
+
+BARS = print(40*'--')
 VREFN_TH = 45
+BUFFER_SIZE = 1024
+FILEDIGITAL = '../files/allDigital_VRefN-SCAN_24May2024_digital.csv'
 
-def read_ppreg(row,col):
+def read_ppreg(row,col) :
+    
+    # Sending row value
+    msg = "#1 LOAD_PICMIC_I2C_REG -add 61 -val {}\n".format(row)
+    client.sendall(msg.encode('utf-8'))
+    data = client.recv(BUFFER_SIZE)
 
-    msg="#1 LOAD_PICMIC_I2C_REG -add 61 -val {}\n".format(row)
-    s.send(msg)
-    data = s.recv(1024)
-    msg="#1 LOAD_PICMIC_I2C_REG -add 62 -val {}\n".format(col)
-    s.send(msg)
-    data = s.recv(1024)
-    msg="#1 READ_PICMIC_I2C_REG -add 63 ?\n"
-    s.send(msg)
-    data = s.recv(1024)
-    response = data.decode('utf-8').strip()   
-    ppreg = response.split('=')[-1].strip()     
+    # Sending col value
+    msg = "#1 LOAD_PICMIC_I2C_REG -add 62 -val {}\n".format(col)
+    client.sendall(msg.encode('utf-8'))
+    data = client.recv(BUFFER_SIZE)
+
+    # Reading response
+    msg = "#1 READ_PICMIC_I2C_REG -add 63 ?\n"
+    client.sendall(msg.encode('utf-8'))
+    data = client.recv(BUFFER_SIZE)
+    response = data.decode('utf-8').strip()
+    ppreg = response.split('=')[-1].strip()
+
     print('----->> Used PPREG value '+str(ppreg)+ ' ~~ for ['+str(row)+','+str(col)+'] <<------' )
     return ppreg
 
 def set_ppreg(row,col,new_ppreg):
-    
-    msg="#1 LOAD_PICMIC_I2C_REG -add 61 -val {}\n".format(row)
-    s.send(msg)
-    data = s.recv(1024)
-    msg="#1 LOAD_PICMIC_I2C_REG -add 62 -val {}\n".format(col)
-    s.send(msg)
-    data = s.recv(1024)
-    msg="#1 LOAD_PICMIC_I2C_REG -add 63 -val {}\n".format(new_ppreg)
-    s.send(msg)
-    data = s.recv(1024)
-    response = data.decode('utf-8').strip()   
-    ppreg = response.split('=')[-1].strip()     
+
+    # Sending row value
+    msg = "#1 LOAD_PICMIC_I2C_REG -add 61 -val {}\n".format(row)
+    client.sendall(msg.encode('utf-8'))
+    data = client.recv(BUFFER_SIZE)
+
+    # Sending col value
+    msg = "#1 LOAD_PICMIC_I2C_REG -add 62 -val {}\n".format(col)
+    client.sendall(msg.encode('utf-8'))
+    data = client.recv(BUFFER_SIZE)
+
+    # Sending ppreg value
+    msg = "#1 LOAD_PICMIC_I2C_REG -add 63 ?\n".format(new_ppreg)
+    client.sendall(msg.encode('utf-8'))
+    data = client.recv(BUFFER_SIZE)
+    response = data.decode('utf-8').strip()
+    ppreg = response.split('=')[-1].strip()
+
     print('----->> Set new PPREG value '+str(ppreg)+ ' ~~ for ['+str(row)+','+str(col)+'] <<------' )
 
 
@@ -69,10 +86,10 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
             formated_string = f"#3 LOAD_PICMIC_I2C_REG -add 39 -val {vrefn} \n"
             byte_string=formated_string.encode('utf-8')
             commands = [
-                ##(b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_08Jul24_V3521.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
-                (b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_26Jun24_V3520.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
-                (b"#2 LOAD_PICMIC_CONFIG_FILE -FROM .\\PICMIC_ConfigFiles\\picmic_cfg_all_columns_row3.txt \n", "Chargement du fichier de configuration PICMIC", "#2 LOAD_PICMIC_CONFIG_FILE #EXECUTED OK"),
-                ##(b"#2 LOAD_PICMIC_CONFIG_FILE -FROM .\\PICMIC_ConfigFiles\\TEST2NN.txt \n", "Chargement du fichier de configuration PICMIC", "#2 LOAD_PICMIC_CONFIG_FILE #EXECUTED OK"),
+                (b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_08Jul24_V3521.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
+                #(b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_26Jun24_V3520.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
+                #(b"#2 LOAD_PICMIC_CONFIG_FILE -FROM .\\PICMIC_ConfigFiles\\picmic_cfg_all_columns_row3.txt \n", "Chargement du fichier de configuration PICMIC", "#2 LOAD_PICMIC_CONFIG_FILE #EXECUTED OK"),
+                (b"#2 LOAD_PICMIC_CONFIG_FILE -FROM .\\PICMIC_ConfigFiles\\combinedPulseDigital_calib_VRefN41_New11Jul2024.txt \n", "Chargement du fichier de configuration PICMIC", "#2 LOAD_PICMIC_CONFIG_FILE #EXECUTED OK"),
                 (byte_string, "LOAD_PICMIC_I2C_REG", "#3 LOAD_PICMIC_I2C_REG #EXECUTED OK"),
             ]
 
@@ -165,10 +182,86 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                 # ########################################################## #
 
                 ## process data from binary to ascii
-                os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_STANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
+                os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_STANDARDBREAK_VREFP.py -f "+linuxDir+"/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
 
                 ## merge decoded data
-                os.system("python /home/ilc/habreu/data_bin2ascii/merger.py -f /group/picmic/RUNDATA/TCPdata/*txt")
+                os.system("python /home/ilc/habreu/data_bin2ascii/merger.py -f "+linuxDir+"/*txt")
+
+                ## get produce file with list of hired pixels
+                filescan = os.system('ls '+linuxDir+'/run_vrefn'+str(vrefn)+'_VRefP-SCAN.csv')
+                df_scan = pd.read_csv(filescan)
+                scanList =  list(df_scan.select_dtypes(include=['float64']).columns)
+
+                print('# of pixels to correct=',len(scanList))
+                print('--List of pixels to correct--')
+                print(scanList)
+
+                if len(scanList)==0 :
+                    vrefn+=1
+                else :
+                    for i, pixel in enumerate(scanList):
+                        
+                        this_row = pixel.split('-')[0][1:].strip()
+                        this_col = pixel.split('-')[1][1:].strip()
+                        this_ppreg = read_ppreg(this_row,this_col)
+                        this_vrefn = vrefn
+                        print('-->>', i, '--',pixel, ', iVRefN:',vrefn, 'PPREG :', this_ppreg))
+                        ###print('---->> PPREG :', this_ppreg)
+                        ##print(df_digital[['VRefN','PPReg']][ (df_digital.Scan==pixel) & (df_digital.PPReg==int(this_ppreg)) ])
+                        ##print(df_digital[['VRefN','PulsedReg']][ (df_digital.Scan==pixel)  & (df_digital.VRefN2<249) ])
+                        ##index_digital = df_digital[['VRefN','PPReg']][ (df_digital.Scan==pixel) & (df_digital.PPReg==int(this_ppreg)) ].index
+                        index_digital = df_digital[['VRefN','PulsedReg']][ (df_digital.Scan==pixel) & (df_digital.PPReg==int(this_ppreg)) ].index
+            
+                        if (len(index_digital)==0):
+                            continue
+                        idx_digital= index_digital[0]
+
+                        zval_digital = df_digital.PPReg[idx_digital]  # zval -- ppreg_digital
+                        xval_digital = df_digital.VRefN[idx_digital]  # xval -- vrefn_digital
+
+
+                        ###  HERE CONTINUE DEVELOPPING 11.07.2024
+
+                        print('INDEX in digital   =',idx_digital)
+                        print('PPREG  value digital=',zval_digital)
+                        print('VREFN value digital=',xval_digital)
+                        ##print('VREFN  value digital=',wval_digital)
+            
+                        min = 999.0
+                        idx_of_min = -1
+                        ppreg_of_min = -1
+                        vrefn_of_min = 999.0
+                        #vrefn2_of_min = 999.0
+            
+                        df_temp = df_digital[['VRefN','PulsedReg','VRefN2']][ (df_digital.Scan==pixel) & (df_digital.VRefN2<249) ].sort_values(by='VRefN2',ascending=True)
+        
+                        for j in df_temp.index :
+                            #wval = df_temp.VRefN[j]
+                            xval = df_temp.VRefN[j]
+                            zval = df_temp.PulsedReg[j]
+            
+                            if ( (this_vrefn - xval > 0 ) & ( abs(this_vrefn-xval)<min  ) & ( zval_digital!=zval)  ) :
+                                min = xval_cali - xval
+                                idx_of_min = j
+                                ppreg_of_min = zval
+                                vrefn_of_min = xval 
+            
+                        print('........')
+                        print('proposed PPReg =',ppreg_of_min)
+                        print('VRefN  of proposed PPReg =',vrefn_of_min)
+                        df_cali.loc[idx_cali,'PPReg'] = ppreg_of_min
+                        df_cali.loc[idx_cali,'rawIadj'] = ppreg_of_min
+                        df_cali.loc[idx_cali,'VRefN'] = vrefn_of_min
+                        df_cali.loc[idx_cali,'Delta'] = abs(df_cali.Mean[idx_cali] - vrefn_of_min)
+                        ##print('~~~~~~~~~~~~~~~~')
+                        ##print(df_cali[df_cali.Scan==pixel])
+                        ##print('--------------------------------------------')
+        
+                        ##df_cali.to_csv('../files/'+outputfile,index=False)
+                        ##newdf = df_cali[['Row','Col','PPReg']]
+                        ##newdf.to_csv('../files/'+outputfile.split('.')[0]+'_reduced.csv',index=False)
+    
+                BARS()
 
                 ## Sweeping --> count the pixels and change their PPReg value
 
@@ -209,6 +302,8 @@ def main():
     port = int(args.port_number)
     ival = int(args.vrefn_val)
     this_dirname = str(args.dir_name).strip()
+
+    df_digital = pd.read_csv(FILEDIGITAL)
 
     if ( (str(args.host_ip)=='None') & (str(args.port_number)=='None') ) :
         print("----------------------- >>>>>>>>>>>>>>>> Host && PortNumber-- Mandatory   <<<<<<<<<<<<<<<<<<<-------------------------")
