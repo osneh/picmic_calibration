@@ -13,53 +13,67 @@ BARS = print(40*'--')
 VREFN_TH = 45
 BUFFER_SIZE = 1024
 FILEDIGITAL = '../files/allDigital_VRefN-SCAN_24May2024_digital.csv'
+df_digital = pd.read_csv(FILEDIGITAL)
 
-def read_ppreg(row,col) :
+def count_txt_files(directory_path):
+    # Get a list of all files in the directory
+    all_files = os.listdir(directory_path)
     
-    # Sending row value
-    msg = "#1 LOAD_PICMIC_I2C_REG -add 61 -val {}\n".format(row)
-    client.sendall(msg.encode('utf-8'))
-    data = client.recv(BUFFER_SIZE)
+    # Filter out files that are not .txt files
+    txt_files = [file for file in all_files if file.endswith('.txt')]
+    
+    # Count the number of .txt files
+    txt_file_count = len(txt_files)
+    
+    return txt_file_count
 
-    # Sending col value
-    msg = "#1 LOAD_PICMIC_I2C_REG -add 62 -val {}\n".format(col)
-    client.sendall(msg.encode('utf-8'))
-    data = client.recv(BUFFER_SIZE)
+##def read_ppreg(row,col) :
+#    
+#    # Sending row value
+#    msg = "#1 LOAD_PICMIC_I2C_REG -add 61 -val {}\n".format(row)
+#    client.sendall(msg.encode('utf-8'))
+#    data = client.recv(BUFFER_SIZE)
+#
+#    # Sending col value
+#    msg = "#1 LOAD_PICMIC_I2C_REG -add 62 -val {}\n".format(col)
+#    client.sendall(msg.encode('utf-8'))
+#    data = client.recv(BUFFER_SIZE)
+#
+#    # Reading response
+#    msg = "#1 READ_PICMIC_I2C_REG -add 63 ?\n"
+#    client.sendall(msg.encode('utf-8'))
+#    data = client.recv(BUFFER_SIZE)
+#    response = data.decode('utf-8').strip()
+#    ppreg = response.split('=')[-1].strip()
+#
+#    print('----->> Used PPREG value '+str(ppreg)+ ' ~~ for ['+str(row)+','+str(col)+'] <<------' )
+#    return ppreg
 
-    # Reading response
-    msg = "#1 READ_PICMIC_I2C_REG -add 63 ?\n"
-    client.sendall(msg.encode('utf-8'))
-    data = client.recv(BUFFER_SIZE)
-    response = data.decode('utf-8').strip()
-    ppreg = response.split('=')[-1].strip()
-
-    print('----->> Used PPREG value '+str(ppreg)+ ' ~~ for ['+str(row)+','+str(col)+'] <<------' )
-    return ppreg
-
-def set_ppreg(row,col,new_ppreg):
-
-    # Sending row value
-    msg = "#1 LOAD_PICMIC_I2C_REG -add 61 -val {}\n".format(row)
-    client.sendall(msg.encode('utf-8'))
-    data = client.recv(BUFFER_SIZE)
-
-    # Sending col value
-    msg = "#1 LOAD_PICMIC_I2C_REG -add 62 -val {}\n".format(col)
-    client.sendall(msg.encode('utf-8'))
-    data = client.recv(BUFFER_SIZE)
-
-    # Sending ppreg value
-    msg = "#1 LOAD_PICMIC_I2C_REG -add 63 ?\n".format(new_ppreg)
-    client.sendall(msg.encode('utf-8'))
-    data = client.recv(BUFFER_SIZE)
-    response = data.decode('utf-8').strip()
-    ppreg = response.split('=')[-1].strip()
-
-    print('----->> Set new PPREG value '+str(ppreg)+ ' ~~ for ['+str(row)+','+str(col)+'] <<------' )
+##def set_ppreg(row,col,new_ppreg):
+##
+##    # Sending row value
+##    msg = "#1 LOAD_PICMIC_I2C_REG -add 61 -val {}\n".format(row)
+##    client.sendall(msg.encode('utf-8'))
+##    data = client.recv(BUFFER_SIZE)
+##
+##    # Sending col value
+##    msg = "#1 LOAD_PICMIC_I2C_REG -add 62 -val {}\n".format(col)
+##    client.sendall(msg.encode('utf-8'))
+##    data = client.recv(BUFFER_SIZE)
+##
+##    # Sending ppreg value
+##    msg = "#1 LOAD_PICMIC_I2C_REG -add 63 ?\n".format(new_ppreg)
+##   client.sendall(msg.encode('utf-8'))
+##    data = client.recv(BUFFER_SIZE)
+##    response = data.decode('utf-8').strip()
+##    ppreg = response.split('=')[-1].strip()
+##
+##    print('----->> Set new PPREG value '+str(ppreg)+ ' ~~ for ['+str(row)+','+str(col)+'] <<------' )
 
 
 # Fonction pour etablir une connexion TCP avec un serveur.
 # ----------------------------------------------------------
+##def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata", df_digital):
 def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
     try:
         # Tentative de connexion au serveur specifie par l adresse et le port.
@@ -71,7 +85,8 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
             #client.settimeout(1.0)
             print("Connexion etablie avec le serveur.")
             # Initialisation du numero de commande a 4.
-            command_number = 4
+            ##command_number = 4
+            command_number = 3
 
             # Fonction interne pour verifier si la reponse du serveur correspond a l'accuse de reception attendu.
             def check_acknowledgement(command_desc, expected_ack, data):
@@ -82,24 +97,74 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                 if expected_ack not in actual_data:
                     raise Exception(f"Acknowledgment expected '{expected_ack}' NOT RECEIVED.")
 
+            # Internal Function to determine the PPREG USED
+            def read_ppreg(row,col) :
+    
+                # Sending row value
+                msg = "#1 LOAD_PICMIC_I2C_REG -add 61 -val {}\n".format(row)
+                client.sendall(msg.encode('utf-8'))
+                data = client.recv(BUFFER_SIZE)
+
+                # Sending col value
+                msg = "#1 LOAD_PICMIC_I2C_REG -add 62 -val {}\n".format(col)
+                client.sendall(msg.encode('utf-8'))
+                data = client.recv(BUFFER_SIZE)
+
+                # Reading response
+                msg = "#1 READ_PICMIC_I2C_REG -add 63 ?\n"
+                client.sendall(msg.encode('utf-8'))
+                data = client.recv(BUFFER_SIZE)
+                response = data.decode('utf-8').strip()
+                ppreg = response.split('=')[-1].strip()
+
+                print('----->> Used PPREG value '+str(ppreg)+ ' ~~ for ['+str(row)+','+str(col)+'] <<------' )
+                return ppreg
+
+            # Internal Function to Set a new PPREG
+            def set_ppreg(row,col,new_ppreg):
+
+                # Sending row value
+                msg = "#1 LOAD_PICMIC_I2C_REG -add 61 -val {}\n".format(row)
+                client.sendall(msg.encode('utf-8'))
+                data = client.recv(BUFFER_SIZE)
+
+                # Sending col value
+                msg = "#1 LOAD_PICMIC_I2C_REG -add 62 -val {}\n".format(col)
+                client.sendall(msg.encode('utf-8'))
+                data = client.recv(BUFFER_SIZE)
+
+                # Sending ppreg value
+                msg = "#1 LOAD_PICMIC_I2C_REG -add 63 -val{}\n".format(new_ppreg)
+                client.sendall(msg.encode('utf-8'))
+                data = client.recv(BUFFER_SIZE)
+                response = data.decode('utf-8').strip()
+                ppreg = response.split('=')[-1].strip()
+
+                print('----->> Set new PPREG value '+str(ppreg)+ ' ~~ for ['+str(row)+','+str(col)+'] <<------' )
+
+
+
             # Liste des commandes a envoyer au serveur avec leur description et l'accuse attendu.
-            formated_string = f"#3 LOAD_PICMIC_I2C_REG -add 39 -val {vrefn} \n"
+            ##formated_string = f"#3 LOAD_PICMIC_I2C_REG -add 39 -val {vrefn} \n"
+            formated_string = f"#2 LOAD_PICMIC_I2C_REG -add 39 -val {vrefn} \n"
             byte_string=formated_string.encode('utf-8')
             commands = [
                 (b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_08Jul24_V3521.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
                 #(b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_26Jun24_V3520.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
                 #(b"#2 LOAD_PICMIC_CONFIG_FILE -FROM .\\PICMIC_ConfigFiles\\picmic_cfg_all_columns_row3.txt \n", "Chargement du fichier de configuration PICMIC", "#2 LOAD_PICMIC_CONFIG_FILE #EXECUTED OK"),
-                (b"#2 LOAD_PICMIC_CONFIG_FILE -FROM .\\PICMIC_ConfigFiles\\combinedPulseDigital_calib_VRefN41_New11Jul2024.txt \n", "Chargement du fichier de configuration PICMIC", "#2 LOAD_PICMIC_CONFIG_FILE #EXECUTED OK"),
-                (byte_string, "LOAD_PICMIC_I2C_REG", "#3 LOAD_PICMIC_I2C_REG #EXECUTED OK"),
+                ####(b"#2 LOAD_PICMIC_CONFIG_FILE -FROM .\\PICMIC_ConfigFiles\\combinedPulseDigital_calib_VRefN41_New11Jul2024.txt \n", "Chargement du fichier de configuration PICMIC", "#2 LOAD_PICMIC_CONFIG_FILE #EXECUTED OK"),
+                ##(b"#2 LOAD_SETUP -FROM .\\Setup\\Setup_08Jul24_V3521.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
+               ## (byte_string, "LOAD_PICMIC_I2C_REG", "#2 LOAD_PICMIC_I2C_REG #EXECUTED OK"),
+                ##(byte_string, "LOAD_PICMIC_I2C_REG", "#3 LOAD_PICMIC_I2C_REG #EXECUTED OK"),
             ]
 
             # Envoi de chaque commande et attente/controle de l'accuse de reception.
             for cmd, desc, ack in commands:
                 print(cmd)
                 client.sendall(cmd)
-                data = client.recv(1024)
+                data = client.recv(BUFFER_SIZE)
                 check_acknowledgement(desc, ack, data)
-            
+            line2 = 'LOAD_PICMIC_I2C_REG -add 39 -val '
             line3 = 'LOAD_PICMIC_I2C_REG -add 38 -val '
             line4 = 'START_RUN -TIME 1 -SAVETO '
             
@@ -118,16 +183,29 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
             sweeping_flag = True
 
             while sweeping_flag :
+                
+                current_command = f"#{command_number} {line2}{vrefn}\n" 
+                client.sendall(current_command.encode('utf-8'))
+                try:
+                    timeout=client.gettimeout()
+                    client.settimeout(10.0)
+                    data = client.recv(BUFFER_SIZE)
+                    client.settimeout(timeout)
+                    check_acknowledgement(f"{line2}{vrefn}", f"#{command_number} LOAD_PICMIC_I2C_REG #EXECUTED OK", data)
+                except socket.timeout:
+                    print('TIMEOUT')
+                command_number += 1
 
                 # for vrefp in range(xlimit[0],xlimit[1],loop_dir):
-                ##for vrefp in range(40,61):
-                for vrefp in range(50,52):
+                for vrefp in range(40,61):
+                ##for vrefp in range(50,52):
                     folder_name = f"run_vrefn{vrefn}_vrefp{vrefp}"
                     # folder_path = os.path.join(directory, folder_name)
                     folder_path = directory +"\\" + folder_name
                     print(f"Repertoire a creer : {folder_path}")
                     if (platform.system()=="Linux") :
-                        linuxDir='/group/picmic'+pathlib.PureWindowsPath(folder_path).as_posix().strip('K:')
+                        linuxDir='/group/picmic'+pathlib.PureWindowsPath(folder_path).as_posix().strip('K:')  
+                        ##print('==== linux Dir;',directory)
                         os.makedirs(linuxDir, exist_ok=True)
                         # print(f"chmod -R g+w {linuxDir}")
                         os.system("chmod -R g+w "+linuxDir)
@@ -142,7 +220,7 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                     try:
                         timeout=client.gettimeout()
                         client.settimeout(10.0)
-                        data = client.recv(1024)
+                        data = client.recv(BUFFER_SIZE)
                         client.settimeout(timeout)
                         check_acknowledgement(f"{line3}{vrefp}", f"#{command_number} LOAD_PICMIC_I2C_REG #EXECUTED OK", data)
                     except socket.timeout:
@@ -152,11 +230,11 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
 
                     current_command = f"#{command_number} {line4}{folder_path}\n"
                     client.sendall(current_command.encode('utf-8'))
-                    data = client.recv(1024)
+                    data = client.recv(BUFFER_SIZE)
                     check_acknowledgement(f"{line4}{folder_path}", f"#{command_number} START_RUN #EXECUTED OK", data)
                     #time.sleep(1)
                     #client.sendall(current_command.encode('utf-8'))
-                    data = client.recv(1024)
+                    data = client.recv(BUFFER_SIZE)
                     check_acknowledgement(f"START_RUN", f"#{command_number} RUN_FINISHED", data)
                     #time.sleep(1.0)
                     #command_number += 1
@@ -170,7 +248,7 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
 
                     if skip_next_response:
                         #print(f"DEBUG: Reponse ignoree pour la commande #{command_number}")
-                        client.recv(1024)
+                        client.recv(BUFFER_SIZE)
                         skip_next_response = False
 
                 # Envoi de la commande pour arrêter les scripts sur le serveur.
@@ -182,14 +260,23 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                 # ########################################################## #
 
                 ## process data from binary to ascii
-                os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_STANDARDBREAK_VREFP.py -f "+linuxDir+"/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
 
+                os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_STANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
+                
                 ## merge decoded data
-                os.system("python /home/ilc/habreu/data_bin2ascii/merger.py -f "+linuxDir+"/*txt")
+                print( 'coutn TXT ', count_txt_files("/group/picmic/RUNDATA/TCPdata"))
+                if count_txt_files("/group/picmic/RUNDATA/TCPdata")== 0 :
+                    vrefn+=1
+                    os.system('rm -rf /group/picmic/RUNDATA/TCPdata/*')
+                    continue
+                ##print('coutn TXT')
+                os.system("python /home/ilc/habreu/data_bin2ascii/merger.py -f /group/picmic/RUNDATA/TCPdata/*txt")
 
                 ## get produce file with list of hired pixels
-                filescan = os.system('ls '+linuxDir+'/run_vrefn'+str(vrefn)+'_VRefP-SCAN.csv')
+                filescan = '/group/picmic/RUNDATA/TCPdata/run_vrefn'+str(vrefn)+'_VRefP-SCAN.csv'
+                print('file to use :', filescan)
                 df_scan = pd.read_csv(filescan)
+                print(df_scan)
                 scanList =  list(df_scan.select_dtypes(include=['float64']).columns)
 
                 print('# of pixels to correct=',len(scanList))
@@ -201,27 +288,25 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                 else :
                     for i, pixel in enumerate(scanList):
                         
-                        this_row = pixel.split('-')[0][1:].strip()
-                        this_col = pixel.split('-')[1][1:].strip()
-                        this_ppreg = read_ppreg(this_row,this_col)
+                        this_row = int(pixel.split('-')[0][1:].strip())
+                        this_col = int(pixel.split('-')[1][1:].strip())
+                        this_ppreg = int(read_ppreg(this_row,this_col))
                         this_vrefn = vrefn
-                        print('-->>', i, '--',pixel, ', iVRefN:',vrefn, 'PPREG :', this_ppreg))
+                        print('-->>', i, '--',pixel, ', iVRefN:',vrefn, 'PPREG :', this_ppreg)
                         ###print('---->> PPREG :', this_ppreg)
                         ##print(df_digital[['VRefN','PPReg']][ (df_digital.Scan==pixel) & (df_digital.PPReg==int(this_ppreg)) ])
                         ##print(df_digital[['VRefN','PulsedReg']][ (df_digital.Scan==pixel)  & (df_digital.VRefN2<249) ])
                         ##index_digital = df_digital[['VRefN','PPReg']][ (df_digital.Scan==pixel) & (df_digital.PPReg==int(this_ppreg)) ].index
-                        index_digital = df_digital[['VRefN','PulsedReg']][ (df_digital.Scan==pixel) & (df_digital.PPReg==int(this_ppreg)) ].index
+                        index_digital = df_digital[['VRefN','PulsedReg']][ (df_digital.Scan==pixel) & (df_digital.PulsedReg==int(this_ppreg)) & (df_digital.VRefN2<249)  ].index
             
                         if (len(index_digital)==0):
                             continue
                         idx_digital= index_digital[0]
 
-                        zval_digital = df_digital.PPReg[idx_digital]  # zval -- ppreg_digital
+                        zval_digital = df_digital.PulsedReg[idx_digital]  # zval -- ppreg_digital
                         xval_digital = df_digital.VRefN[idx_digital]  # xval -- vrefn_digital
 
-
                         ###  HERE CONTINUE DEVELOPPING 11.07.2024
-
                         print('INDEX in digital   =',idx_digital)
                         print('PPREG  value digital=',zval_digital)
                         print('VREFN value digital=',xval_digital)
@@ -233,15 +318,19 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                         vrefn_of_min = 999.0
                         #vrefn2_of_min = 999.0
             
-                        df_temp = df_digital[['VRefN','PulsedReg','VRefN2']][ (df_digital.Scan==pixel) & (df_digital.VRefN2<249) ].sort_values(by='VRefN2',ascending=True)
-        
+                        print(20*'+')
+                        df_temp = df_digital[['VRefN','PulsedReg']][ (df_digital.Scan==pixel) & (df_digital.VRefN>1) ].sort_values(by='VRefN',ascending=True)
+
+                        print(20*'++')
+                        print(df_temp)
+
                         for j in df_temp.index :
                             #wval = df_temp.VRefN[j]
                             xval = df_temp.VRefN[j]
                             zval = df_temp.PulsedReg[j]
             
-                            if ( (this_vrefn - xval > 0 ) & ( abs(this_vrefn-xval)<min  ) & ( zval_digital!=zval)  ) :
-                                min = xval_cali - xval
+                            if ( (xval - this_vrefn > 0 ) & ( abs(this_vrefn-xval)<min  ) & ( zval_digital!=zval)  ) :
+                                min = abs(this_vrefn - xval)
                                 idx_of_min = j
                                 ppreg_of_min = zval
                                 vrefn_of_min = xval 
@@ -249,23 +338,22 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                         print('........')
                         print('proposed PPReg =',ppreg_of_min)
                         print('VRefN  of proposed PPReg =',vrefn_of_min)
-                        df_cali.loc[idx_cali,'PPReg'] = ppreg_of_min
-                        df_cali.loc[idx_cali,'rawIadj'] = ppreg_of_min
-                        df_cali.loc[idx_cali,'VRefN'] = vrefn_of_min
-                        df_cali.loc[idx_cali,'Delta'] = abs(df_cali.Mean[idx_cali] - vrefn_of_min)
+
+                        set_ppreg(this_row,this_col,int(ppreg_of_min))
+                        #df_cali.loc[idx_cali,'PPReg'] = ppreg_of_min
+                        #df_cali.loc[idx_cali,'rawIadj'] = ppreg_of_min
+                        #df_cali.loc[idx_cali,'VRefN'] = vrefn_of_min
+                        #df_cali.loc[idx_cali,'Delta'] = abs(df_cali.Mean[idx_cali] - vrefn_of_min)
                         ##print('~~~~~~~~~~~~~~~~')
                         ##print(df_cali[df_cali.Scan==pixel])
-                        ##print('--------------------------------------------')
+                        print('--------------------------------------------')
         
                         ##df_cali.to_csv('../files/'+outputfile,index=False)
                         ##newdf = df_cali[['Row','Col','PPReg']]
                         ##newdf.to_csv('../files/'+outputfile.split('.')[0]+'_reduced.csv',index=False)
-    
-                BARS()
-
                 ## Sweeping --> count the pixels and change their PPReg value
-
-                sweeping_flag = False
+                if (vrefn>VREFN_TH) :
+                    sweeping_flag = False
             # --- Henso Here
             exit()
 
@@ -303,8 +391,8 @@ def main():
     ival = int(args.vrefn_val)
     this_dirname = str(args.dir_name).strip()
 
-    df_digital = pd.read_csv(FILEDIGITAL)
-
+    print(df_digital)
+    ##exit()
     if ( (str(args.host_ip)=='None') & (str(args.port_number)=='None') ) :
         print("----------------------- >>>>>>>>>>>>>>>> Host && PortNumber-- Mandatory   <<<<<<<<<<<<<<<<<<<-------------------------")
         print('Script not executed')
@@ -312,6 +400,7 @@ def main():
 
     print('host=',host,',port=',port, ',vrefn=',ival, ',dir_name=',this_dirname)
 
+    ##connect_to_server(host, port, ival,this_dirname,df_dig)
     connect_to_server(host, port, ival,this_dirname)
 
     print('----- DONE ----------')
