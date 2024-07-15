@@ -10,7 +10,7 @@ import sys
 import pandas as pd
 
 BARS = print(40*'--')
-VREFN_TH = 45
+VREFN_TH = 40
 BUFFER_SIZE = 1024
 FILEDIGITAL = '../files/allDigital_VRefN-SCAN_24May2024_digital.csv'
 df_digital = pd.read_csv(FILEDIGITAL)
@@ -173,11 +173,12 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
             os.makedirs(directory, exist_ok=True)
 
             # Boucle pour la creation des dossiers specifiques a chaque operation et envoi des commandes correspondantes pour une boucle en VrefN. 
-            xlimit = [5,VREFN_TH-4]
+            xlimit = [5,42]
             loop_dir = 1
+            loop_counter=0
 
             if ( vrefn-VREFN_TH > 0 ) :
-                xlimit = [65,VREFN_TH+3]
+                xlimit = [65,41]
                 loop_dir = -1
             
             sweeping_flag = True
@@ -199,6 +200,7 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                 # for vrefp in range(xlimit[0],xlimit[1],loop_dir):
                 for vrefp in range(40,61):
                 ##for vrefp in range(50,52):
+                    loop_counter+=1
                     folder_name = f"run_vrefn{vrefn}_vrefp{vrefp}"
                     # folder_path = os.path.join(directory, folder_name)
                     folder_path = directory +"\\" + folder_name
@@ -261,13 +263,17 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
 
                 ## process data from binary to ascii
 
-                os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_STANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
+                os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_NOSTANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
+                ##os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_STANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
                 
                 ## merge decoded data
                 print( 'coutn TXT ', count_txt_files("/group/picmic/RUNDATA/TCPdata"))
                 if count_txt_files("/group/picmic/RUNDATA/TCPdata")== 0 :
-                    vrefn+=1
+                    vrefn+=loop_dir
                     os.system('rm -rf /group/picmic/RUNDATA/TCPdata/*')
+                    loop_counter=0
+                    if (vrefn==xlimit[1]) :
+                        sweeping_flag = False
                     continue
                 ##print('coutn TXT')
                 os.system("python /home/ilc/habreu/data_bin2ascii/merger.py -f /group/picmic/RUNDATA/TCPdata/*txt")
@@ -284,7 +290,10 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                 print(scanList)
 
                 if len(scanList)==0 :
-                    vrefn+=1
+                    vrefn+=loop_dir
+                    loop_counter=0
+                    if (vrefn==xlimit[1]) :
+                        sweeping_flag = False
                 else :
                     for i, pixel in enumerate(scanList):
                         
@@ -320,26 +329,39 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
             
                         print(20*'+')
                         df_temp = df_digital[['VRefN','PulsedReg']][ (df_digital.Scan==pixel) & (df_digital.VRefN>1) ].sort_values(by='VRefN',ascending=True)
+                        print(df_temp)
+                        list_temp = df_temp['PulsedReg'].tolist()
+                        index_current_val = list_temp.index(this_ppreg)
+                        del df_temp
 
                         print(20*'++')
-                        print(df_temp)
+                        print(list_temp)
+                        print(20*'++')
+                        ##print(df_temp)
 
-                        for j in df_temp.index :
-                            #wval = df_temp.VRefN[j]
-                            xval = df_temp.VRefN[j]
-                            zval = df_temp.PulsedReg[j]
-            
-                            if ( (xval - this_vrefn > 0 ) & ( abs(this_vrefn-xval)<min  ) & ( zval_digital!=zval)  ) :
-                                min = abs(this_vrefn - xval)
-                                idx_of_min = j
-                                ppreg_of_min = zval
-                                vrefn_of_min = xval 
+                        ##for j in df_temp.index :
+                        ##    #wval = df_temp.VRefN[j]
+                        ##    xval = df_temp.VRefN[j]
+                        ##    zval = df_temp.PulsedReg[j]
+                        ##
+                        ##    if ( (xval - this_vrefn > 0 ) & ( abs(this_vrefn-xval)<min  ) & ( zval_digital!=zval)  ) :
+                        ##        min = abs(this_vrefn - xval)
+                        ##        idx_of_min = j
+                        j = index_current_val +1
+                        if (loop_dir<0) :
+                            j = index_current_val -1
+
+                        ppreg_of_min = list_temp[j]
+                        ##        vrefn_of_min = xval 
             
                         print('........')
                         print('proposed PPReg =',ppreg_of_min)
-                        print('VRefN  of proposed PPReg =',vrefn_of_min)
+                        #print('VRefN  of proposed PPReg =',vrefn_of_min)
 
                         set_ppreg(this_row,this_col,int(ppreg_of_min))
+
+                        ##if (loop_counter==10) :
+
                         #df_cali.loc[idx_cali,'PPReg'] = ppreg_of_min
                         #df_cali.loc[idx_cali,'rawIadj'] = ppreg_of_min
                         #df_cali.loc[idx_cali,'VRefN'] = vrefn_of_min
@@ -352,7 +374,7 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                         ##newdf = df_cali[['Row','Col','PPReg']]
                         ##newdf.to_csv('../files/'+outputfile.split('.')[0]+'_reduced.csv',index=False)
                 ## Sweeping --> count the pixels and change their PPReg value
-                if (vrefn>VREFN_TH) :
+                if (vrefn==xlimit[1]) :
                     sweeping_flag = False
             # --- Henso Here
             exit()
