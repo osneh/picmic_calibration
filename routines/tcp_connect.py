@@ -10,7 +10,8 @@ import sys
 import pandas as pd
 
 BARS = print(40*'--')
-VREFN_TH = 40
+##VREFN_TH = 42
+VREFN_TH = 41
 BUFFER_SIZE = 1024
 FILEDIGITAL = '../files/allDigital_VRefN-SCAN_24May2024_digital.csv'
 df_digital = pd.read_csv(FILEDIGITAL)
@@ -166,14 +167,14 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                 check_acknowledgement(desc, ack, data)
             line2 = 'LOAD_PICMIC_I2C_REG -add 39 -val '
             line3 = 'LOAD_PICMIC_I2C_REG -add 38 -val '
-            line4 = 'START_RUN -TIME 1 -SAVETO '
+            line4 = 'START_RUN -TIME 2 -SAVETO '
             
             directory = dirname
             
             os.makedirs(directory, exist_ok=True)
 
             # Boucle pour la creation des dossiers specifiques a chaque operation et envoi des commandes correspondantes pour une boucle en VrefN. 
-            xlimit = [5,42]
+            xlimit = [5,41]
             loop_dir = 1
             loop_counter=0
 
