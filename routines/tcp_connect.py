@@ -28,50 +28,6 @@ def count_txt_files(directory_path):
     
     return txt_file_count
 
-##def read_ppreg(row,col) :
-#    
-#    # Sending row value
-#    msg = "#1 LOAD_PICMIC_I2C_REG -add 61 -val {}\n".format(row)
-#    client.sendall(msg.encode('utf-8'))
-#    data = client.recv(BUFFER_SIZE)
-#
-#    # Sending col value
-#    msg = "#1 LOAD_PICMIC_I2C_REG -add 62 -val {}\n".format(col)
-#    client.sendall(msg.encode('utf-8'))
-#    data = client.recv(BUFFER_SIZE)
-#
-#    # Reading response
-#    msg = "#1 READ_PICMIC_I2C_REG -add 63 ?\n"
-#    client.sendall(msg.encode('utf-8'))
-#    data = client.recv(BUFFER_SIZE)
-#    response = data.decode('utf-8').strip()
-#    ppreg = response.split('=')[-1].strip()
-#
-#    print('----->> Used PPREG value '+str(ppreg)+ ' ~~ for ['+str(row)+','+str(col)+'] <<------' )
-#    return ppreg
-
-##def set_ppreg(row,col,new_ppreg):
-##
-##    # Sending row value
-##    msg = "#1 LOAD_PICMIC_I2C_REG -add 61 -val {}\n".format(row)
-##    client.sendall(msg.encode('utf-8'))
-##    data = client.recv(BUFFER_SIZE)
-##
-##    # Sending col value
-##    msg = "#1 LOAD_PICMIC_I2C_REG -add 62 -val {}\n".format(col)
-##    client.sendall(msg.encode('utf-8'))
-##    data = client.recv(BUFFER_SIZE)
-##
-##    # Sending ppreg value
-##    msg = "#1 LOAD_PICMIC_I2C_REG -add 63 ?\n".format(new_ppreg)
-##   client.sendall(msg.encode('utf-8'))
-##    data = client.recv(BUFFER_SIZE)
-##    response = data.decode('utf-8').strip()
-##    ppreg = response.split('=')[-1].strip()
-##
-##    print('----->> Set new PPREG value '+str(ppreg)+ ' ~~ for ['+str(row)+','+str(col)+'] <<------' )
-
-
 # Fonction pour etablir une connexion TCP avec un serveur.
 # ----------------------------------------------------------
 ##def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata", df_digital):
@@ -205,7 +161,7 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                     folder_name = f"run_vrefn{vrefn}_vrefp{vrefp}"
                     # folder_path = os.path.join(directory, folder_name)
                     folder_path = directory +"\\" + folder_name
-                    print(f"Repertoire a creer : {folder_path}")
+                    ##print(f"Repertoire a creer : {folder_path}")
                     if (platform.system()=="Linux") :
                         linuxDir='/group/picmic'+pathlib.PureWindowsPath(folder_path).as_posix().strip('K:')  
                         ##print('==== linux Dir;',directory)
@@ -303,10 +259,6 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                         this_ppreg = int(read_ppreg(this_row,this_col))
                         this_vrefn = vrefn
                         print('-->>', i, '--',pixel, ', iVRefN:',vrefn, 'PPREG :', this_ppreg)
-                        ###print('---->> PPREG :', this_ppreg)
-                        ##print(df_digital[['VRefN','PPReg']][ (df_digital.Scan==pixel) & (df_digital.PPReg==int(this_ppreg)) ])
-                        ##print(df_digital[['VRefN','PulsedReg']][ (df_digital.Scan==pixel)  & (df_digital.VRefN2<249) ])
-                        ##index_digital = df_digital[['VRefN','PPReg']][ (df_digital.Scan==pixel) & (df_digital.PPReg==int(this_ppreg)) ].index
                         index_digital = df_digital[['VRefN','PulsedReg']][ (df_digital.Scan==pixel) & (df_digital.PulsedReg==int(this_ppreg)) & (df_digital.VRefN2<249)  ].index
             
                         if (len(index_digital)==0):
@@ -338,16 +290,7 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                         print(20*'++')
                         print(list_temp)
                         print(20*'++')
-                        ##print(df_temp)
 
-                        ##for j in df_temp.index :
-                        ##    #wval = df_temp.VRefN[j]
-                        ##    xval = df_temp.VRefN[j]
-                        ##    zval = df_temp.PulsedReg[j]
-                        ##
-                        ##    if ( (xval - this_vrefn > 0 ) & ( abs(this_vrefn-xval)<min  ) & ( zval_digital!=zval)  ) :
-                        ##        min = abs(this_vrefn - xval)
-                        ##        idx_of_min = j
                         j = index_current_val +1
                         if (loop_dir<0) :
                             j = index_current_val -1
@@ -357,23 +300,13 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
             
                         print('........')
                         print('proposed PPReg =',ppreg_of_min)
-                        #print('VRefN  of proposed PPReg =',vrefn_of_min)
 
                         set_ppreg(this_row,this_col,int(ppreg_of_min))
 
                         ##if (loop_counter==10) :
 
-                        #df_cali.loc[idx_cali,'PPReg'] = ppreg_of_min
-                        #df_cali.loc[idx_cali,'rawIadj'] = ppreg_of_min
-                        #df_cali.loc[idx_cali,'VRefN'] = vrefn_of_min
-                        #df_cali.loc[idx_cali,'Delta'] = abs(df_cali.Mean[idx_cali] - vrefn_of_min)
-                        ##print('~~~~~~~~~~~~~~~~')
-                        ##print(df_cali[df_cali.Scan==pixel])
                         print('--------------------------------------------')
         
-                        ##df_cali.to_csv('../files/'+outputfile,index=False)
-                        ##newdf = df_cali[['Row','Col','PPReg']]
-                        ##newdf.to_csv('../files/'+outputfile.split('.')[0]+'_reduced.csv',index=False)
                 ## Sweeping --> count the pixels and change their PPReg value
                 if (vrefn==xlimit[1]) :
                     sweeping_flag = False
