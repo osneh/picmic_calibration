@@ -11,7 +11,10 @@ import pandas as pd
 
 BARS = print(40*'--')
 ##VREFN_TH = 42
-VREFN_TH = 41
+##VREFN_TH = 41
+VREFN_TH = 40
+##VREFN_TH = 39
+##VREFN_TH = 41
 BUFFER_SIZE = 1024
 FILEDIGITAL = '../files/allDigital_VRefN-SCAN_24May2024_digital.csv'
 df_digital = pd.read_csv(FILEDIGITAL)
@@ -107,6 +110,7 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
             byte_string=formated_string.encode('utf-8')
             commands = [
                 (b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_08Jul24_V3521.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
+                ##(b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_04Sep24_V3525.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
                 #(b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_26Jun24_V3520.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
                 #(b"#2 LOAD_PICMIC_CONFIG_FILE -FROM .\\PICMIC_ConfigFiles\\picmic_cfg_all_columns_row3.txt \n", "Chargement du fichier de configuration PICMIC", "#2 LOAD_PICMIC_CONFIG_FILE #EXECUTED OK"),
                 ####(b"#2 LOAD_PICMIC_CONFIG_FILE -FROM .\\PICMIC_ConfigFiles\\combinedPulseDigital_calib_VRefN41_New11Jul2024.txt \n", "Chargement du fichier de configuration PICMIC", "#2 LOAD_PICMIC_CONFIG_FILE #EXECUTED OK"),
@@ -123,19 +127,23 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                 check_acknowledgement(desc, ack, data)
             line2 = 'LOAD_PICMIC_I2C_REG -add 39 -val '
             line3 = 'LOAD_PICMIC_I2C_REG -add 38 -val '
-            line4 = 'START_RUN -TIME 2 -SAVETO '
+            ##line4 = 'START_RUN -TIME 2 -SAVETO '
+            ##line4 = 'START_RUN -TIME 20 -SAVETO '
+            line4 = 'START_RUN -TIME 1 -SAVETO '
             
             directory = dirname
             
             os.makedirs(directory, exist_ok=True)
 
             # Boucle pour la creation des dossiers specifiques a chaque operation et envoi des commandes correspondantes pour une boucle en VrefN. 
-            xlimit = [5,41]
+            ##xlimit = [5,40]
+            xlimit = [5,VREFN_TH]
             loop_dir = 1
             loop_counter=0
 
             if ( vrefn-VREFN_TH > 0 ) :
-                xlimit = [65,41]
+                ##xlimit = [65,40]
+                xlimit = [80,VREFN_TH]
                 loop_dir = -1
             
             sweeping_flag = True
@@ -147,6 +155,7 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                 try:
                     timeout=client.gettimeout()
                     client.settimeout(10.0)
+                    ##client.settimeout(30.0)
                     data = client.recv(BUFFER_SIZE)
                     client.settimeout(timeout)
                     check_acknowledgement(f"{line2}{vrefn}", f"#{command_number} LOAD_PICMIC_I2C_REG #EXECUTED OK", data)
@@ -156,6 +165,9 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
 
                 # for vrefp in range(xlimit[0],xlimit[1],loop_dir):
                 for vrefp in range(40,61):
+                ##for vrefp in range(30,71):
+                ##for vrefp in range(40,80):
+                ##for vrefp in range(40,56):
                 ##for vrefp in range(50,52):
                     loop_counter+=1
                     folder_name = f"run_vrefn{vrefn}_vrefp{vrefp}"
@@ -246,7 +258,8 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                 print('--List of pixels to correct--')
                 print(scanList)
 
-                if len(scanList)==0 :
+                ##if ( len(scanList)==0 or len(scanList)>2 ) :
+                if len(scanList)==0  :
                     vrefn+=loop_dir
                     loop_counter=0
                     if (vrefn==xlimit[1]) :
@@ -261,7 +274,8 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                         print('-->>', i, '--',pixel, ', iVRefN:',vrefn, 'PPREG :', this_ppreg)
                         index_digital = df_digital[['VRefN','PulsedReg']][ (df_digital.Scan==pixel) & (df_digital.PulsedReg==int(this_ppreg)) & (df_digital.VRefN2<249)  ].index
             
-                        if (len(index_digital)==0):
+                        if (len(index_digital)==0) :
+                        ##if (len(index_digital)==0 or len(index_digital)>2) :
                             continue
                         idx_digital= index_digital[0]
 
