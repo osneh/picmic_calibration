@@ -109,8 +109,8 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
             formated_string = f"#2 LOAD_PICMIC_I2C_REG -add 39 -val {vrefn} \n"
             byte_string=formated_string.encode('utf-8')
             commands = [
-                (b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_08Jul24_V3521.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
-                ##(b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_04Sep24_V3525.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
+                ##(b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_08Jul24_V3521.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
+                (b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_04Sep24_V3525.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
                 #(b"#1 LOAD_SETUP -FROM .\\Setup\\Setup_26Jun24_V3520.dat\n", "LOAD_SETUP", "#1 LOAD_SETUP #EXECUTED OK"),
                 #(b"#2 LOAD_PICMIC_CONFIG_FILE -FROM .\\PICMIC_ConfigFiles\\picmic_cfg_all_columns_row3.txt \n", "Chargement du fichier de configuration PICMIC", "#2 LOAD_PICMIC_CONFIG_FILE #EXECUTED OK"),
                 ####(b"#2 LOAD_PICMIC_CONFIG_FILE -FROM .\\PICMIC_ConfigFiles\\combinedPulseDigital_calib_VRefN41_New11Jul2024.txt \n", "Chargement du fichier de configuration PICMIC", "#2 LOAD_PICMIC_CONFIG_FILE #EXECUTED OK"),
@@ -232,11 +232,13 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
 
                 ## process data from binary to ascii
 
-                os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_NOSTANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
+                ##os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_NOSTANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
+                os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_NOSTANDARDBREAK_VREFP_TEST.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_ru*/picmic_dat*/picmic_*.bin")
                 ##os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_STANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
-                
+                ##os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_STANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
+
                 ## merge decoded data
-                print( 'coutn TXT ', count_txt_files("/group/picmic/RUNDATA/TCPdata"))
+                print( 'count TXT ', count_txt_files("/group/picmic/RUNDATA/TCPdata"))
                 if count_txt_files("/group/picmic/RUNDATA/TCPdata")== 0 :
                     vrefn+=loop_dir
                     os.system('rm -rf /group/picmic/RUNDATA/TCPdata/*')
@@ -361,7 +363,7 @@ def main():
     ival = int(args.vrefn_val)
     this_dirname = str(args.dir_name).strip()
 
-    print(df_digital)
+    ##print(df_digital)
     ##exit()
     if ( (str(args.host_ip)=='None') & (str(args.port_number)=='None') ) :
         print("----------------------- >>>>>>>>>>>>>>>> Host && PortNumber-- Mandatory   <<<<<<<<<<<<<<<<<<<-------------------------")
