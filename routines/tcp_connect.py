@@ -12,12 +12,16 @@ import pandas as pd
 BARS = print(40*'--')
 ##VREFN_TH = 42
 ##VREFN_TH = 41
-VREFN_TH = 40
+##VREFN_TH = 40
 ##VREFN_TH = 39
-##VREFN_TH = 41
+VREFN_TH = 40
 BUFFER_SIZE = 1024
-FILEDIGITAL = '../files/allDigital_VRefN-SCAN_24May2024_digital.csv'
+##FILEDIGITAL = '../files/allDigital_VRefN-SCAN_24May2024_digital.csv'
+FILEDIGITAL = '../files/allDigital_VRefN-SCAN_07Oct2024_NOTDUMMIES.csv'
 df_digital = pd.read_csv(FILEDIGITAL)
+##ALLDATA=1
+##ALLDATA=0
+
 
 def count_txt_files(directory_path):
     # Get a list of all files in the directory
@@ -34,6 +38,7 @@ def count_txt_files(directory_path):
 # Fonction pour etablir une connexion TCP avec un serveur.
 # ----------------------------------------------------------
 ##def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata", df_digital):
+##def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata", alldata):
 def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
     try:
         # Tentative de connexion au serveur specifie par l adresse et le port.
@@ -127,7 +132,7 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                 check_acknowledgement(desc, ack, data)
             line2 = 'LOAD_PICMIC_I2C_REG -add 39 -val '
             line3 = 'LOAD_PICMIC_I2C_REG -add 38 -val '
-            ##line4 = 'START_RUN -TIME 2 -SAVETO '
+            ##line4 = 'START_RUN -TIME 5 -SAVETO '
             ##line4 = 'START_RUN -TIME 20 -SAVETO '
             line4 = 'START_RUN -TIME 1 -SAVETO '
             
@@ -190,7 +195,7 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                     client.sendall(current_command.encode('utf-8'))
                     try:
                         timeout=client.gettimeout()
-                        client.settimeout(10.0)
+                        client.settimeout(20.0)
                         data = client.recv(BUFFER_SIZE)
                         client.settimeout(timeout)
                         check_acknowledgement(f"{line3}{vrefp}", f"#{command_number} LOAD_PICMIC_I2C_REG #EXECUTED OK", data)
@@ -231,10 +236,11 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                 # ########################################################## #
 
                 ## process data from binary to ascii
-
                 ##os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_NOSTANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
                 os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_NOSTANDARDBREAK_VREFP_TEST.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_ru*/picmic_dat*/picmic_*.bin")
-                ##os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_STANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
+     		##os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_STANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
+                	##os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_STANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
+                ##else :
                 ##os.system("/home/ilc/habreu/data_bin2ascii/readDataPicmic_bin2ascii_STANDARDBREAK_VREFP.py -f /group/picmic/RUNDATA/TCPdata/run_vrefn*_vrefp*/sampic_tcp_ru*/picmic_dat*/picmic_*.bin")
 
                 ## merge decoded data
@@ -274,7 +280,8 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                         this_ppreg = int(read_ppreg(this_row,this_col))
                         this_vrefn = vrefn
                         print('-->>', i, '--',pixel, ', iVRefN:',vrefn, 'PPREG :', this_ppreg)
-                        index_digital = df_digital[['VRefN','PulsedReg']][ (df_digital.Scan==pixel) & (df_digital.PulsedReg==int(this_ppreg)) & (df_digital.VRefN2<249)  ].index
+                        ##index_digital = df_digital[['VRefN','PulsedReg']][ (df_digital.Scan==pixel) & (df_digital.PulsedReg==int(this_ppreg)) & (df_digital.VRefN2<249)  ].index
+                        index_digital = df_digital[['VRefN','PulsedReg']][ (df_digital.Scan==pixel) & (df_digital.PulsedReg==int(this_ppreg)) & (df_digital.VRefN<249)  & (df_digital.VRefN>5)  ].index
             
                         if (len(index_digital)==0) :
                         ##if (len(index_digital)==0 or len(index_digital)>2) :
@@ -297,6 +304,7 @@ def connect_to_server(server, port, vrefn, dirname="K:\\RUNDATA\\TCPdata"):
                         #vrefn2_of_min = 999.0
             
                         print(20*'+')
+                        print('-- HERE --')
                         df_temp = df_digital[['VRefN','PulsedReg']][ (df_digital.Scan==pixel) & (df_digital.VRefN>1) ].sort_values(by='VRefN',ascending=True)
                         print(df_temp)
                         list_temp = df_temp['PulsedReg'].tolist()
@@ -355,6 +363,7 @@ def main():
     parser.add_argument("-port", "--port_number" ,help="provide the port number")
     parser.add_argument("-vrefn", "--vrefn_val" ,help="provide the current vrefn value")
     parser.add_argument("-dirname", "--dir_name" ,help="provide the output directory value")
+##    parser.add_argument("-alldata", "--all_data" ,help="provide the output directory value")
     ##parser.add_argument("-sweeping","--RL",help="Sweeping Right(1) or Left(0)", action=argparse.BooleanOptionalAction, default=True)
     args = parser.parse_args()
 
@@ -362,6 +371,7 @@ def main():
     port = int(args.port_number)
     ival = int(args.vrefn_val)
     this_dirname = str(args.dir_name).strip()
+##    m_alldata = int(args.all_data)
 
     ##print(df_digital)
     ##exit()
@@ -370,9 +380,11 @@ def main():
         print('Script not executed')
         exit()
 
+    ##print('host=',host,',port=',port, ',vrefn=',ival, ',dir_name=',this_dirname, ', process all data=',m_alldata)
     print('host=',host,',port=',port, ',vrefn=',ival, ',dir_name=',this_dirname)
 
     ##connect_to_server(host, port, ival,this_dirname,df_dig)
+    ##connect_to_server(host, port, ival,this_dirname,m_alldata)
     connect_to_server(host, port, ival,this_dirname)
 
     print('----- DONE ----------')
